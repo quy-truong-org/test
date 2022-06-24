@@ -1,0 +1,36 @@
+name: Merge master to develop
+on:
+  push:
+    branches:
+      - master
+jobs:
+  merge-master-to-develop:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          ref: develop
+      - name: Reset master branch
+        run: |
+          git fetch origin master:master
+          git reset --hard master
+      - name: Set output variables
+        id: vars
+        run: |
+          echo ::set-output name=pr_title::"Merge master to develop $(date +%d-%m-%Y)"
+          echo ::set-output name=pr_body::""
+      - name: Create Pull Request
+        id: cpr
+        uses: peter-evans/create-pull-request@v4
+        with:
+          branch: merge-master-to-develop
+          base: develop
+          labels: automated pr
+          title: ${{ steps.vars.outputs.pr_title }}
+          body: ${{ steps.vars.outputs.pr_body }}
+      - name: Approve Pull Request
+        if: steps.cpr.outputs.pull-request-operation == 'created'
+        uses: hmarr/auto-approve-action@v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          pull-request-number: ${{ steps.cpr.outputs.pull-request-number }}
